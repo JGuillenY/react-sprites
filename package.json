@@ -1,0 +1,45 @@
+{
+  "name": "@infinite-dungeon/sprite-manager",
+  "version": "0.1.0",
+  "description": "A React-based sprite and animation management library for games",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "react",
+    "sprite",
+    "animation",
+    "game",
+    "canvas",
+    "typescript"
+  ],
+  "author": "Infinite Dungeon Team",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^8.0.3",
+    "vite-plugin-dts": "^3.0.0"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^6.0.1",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  }
+}
