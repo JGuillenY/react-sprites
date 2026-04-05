@@ -23,6 +23,7 @@ export const ImgAnimatedSprite = forwardRef<AnimatedSpriteRef, AnimatedSpritePro
       className = "",
       transform = {},
       autoPlay = true,
+      paused = false,
       onAnimationComplete,
       onLoad,
     }: AnimatedSpriteProps,
@@ -181,6 +182,19 @@ export const ImgAnimatedSprite = forwardRef<AnimatedSpriteRef, AnimatedSpritePro
     const getAnimationState = useCallback(() => {
       return animationControllerRef.current?.getState() || null;
     }, []);
+
+    // Handle paused prop
+    useEffect(() => {
+      if (!animationControllerRef.current) {
+        return;
+      }
+      
+      if (paused) {
+        animationControllerRef.current.pause();
+      } else {
+        animationControllerRef.current.resume();
+      }
+    }, [paused]);
 
     // Expose control methods via ref
     useImperativeHandle(ref, () => ({

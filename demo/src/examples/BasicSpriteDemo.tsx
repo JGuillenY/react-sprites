@@ -192,8 +192,8 @@ export default function BasicSpriteDemo() {
             className="success"
             onClick={() =>
               setTransform({
-                x: 200,
-                y: 150,
+                x: 0,
+                y: 0,
                 scaleX: 1,
                 scaleY: 1,
                 rotation: 0,
@@ -207,8 +207,8 @@ export default function BasicSpriteDemo() {
             className="secondary"
             onClick={() =>
               setTransform({
-                x: 100,
-                y: 100,
+                x: 0,
+                y: 0,
                 scaleX: 2,
                 scaleY: 2,
                 rotation: 45,
@@ -222,8 +222,8 @@ export default function BasicSpriteDemo() {
             className="secondary"
             onClick={() =>
               setTransform({
-                x: 300,
-                y: 200,
+                x: 0,
+                y: 0,
                 scaleX: 0.5,
                 scaleY: 0.5,
                 rotation: -30,

@@ -105,6 +105,8 @@ export type AnimatedSpriteProps = {
   };
   /** Whether to auto-play the idle animation on mount (default: true) */
   autoPlay?: boolean;
+  /** Whether the animation is paused (default: false) */
+  paused?: boolean;
   /** Callback when the current animation completes (for non-looping animations) */
   onAnimationComplete?: (animationId: string) => void;
   /** Callback when all sprites are loaded */

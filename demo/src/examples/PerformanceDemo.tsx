@@ -111,6 +111,7 @@ export default function PerformanceDemo() {
             height={32}
             transform={{ x, y }}
             autoPlay={true}
+            paused={!isRunning}
           />
         );
       }
