@@ -56,7 +56,7 @@ export function Sprite({
     if (!ctx) return;
 
     const resource = getResource(src);
-    if (!resource?.loaded || !resource.image) return;
+    if (!resource?.image) return;
 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -98,7 +98,7 @@ export function Sprite({
     } else if (hasFrameData && (transform.frameData as any)?.width) {
       drawWidth = (transform.frameData as any).width;
     } else {
-      drawWidth = resourceImage.naturalWidth;
+      drawWidth = resourceImage.naturalWidth || 0;
     }
     
     if (height) {
@@ -106,26 +106,37 @@ export function Sprite({
     } else if (hasFrameData && (transform.frameData as any)?.height) {
       drawHeight = (transform.frameData as any).height;
     } else {
-      drawHeight = resourceImage.naturalHeight;
+      drawHeight = resourceImage.naturalHeight || 0;
+    }
+
+    // Don't draw if dimensions are zero
+    if (drawWidth <= 0 || drawHeight <= 0) {
+      console.warn('Sprite: Cannot draw with zero dimensions', { src, drawWidth, drawHeight });
+      ctx.restore();
+      return;
     }
 
     // Center the image if no position specified
     const drawX = transform.x === undefined ? -drawWidth / 2 : 0;
     const drawY = transform.y === undefined ? -drawHeight / 2 : 0;
     
-    // Check if we need to draw a specific frame from a sprite sheet
-    if (hasFrameData && transform.frameData) {
-      const frameData = transform.frameData as any;
-      
-      // Draw specific frame from sprite sheet
-      ctx.drawImage(
-        resourceImage,
-        frameData.x, frameData.y, frameData.width, frameData.height, // Source rectangle (sprite sheet)
-        drawX, drawY, drawWidth, drawHeight // Destination rectangle
-      );
-    } else {
-      // Draw the entire image
-      ctx.drawImage(resourceImage, drawX, drawY, drawWidth, drawHeight);
+    try {
+      // Check if we need to draw a specific frame from a sprite sheet
+      if (hasFrameData && transform.frameData) {
+        const frameData = transform.frameData as any;
+        
+        // Draw specific frame from sprite sheet
+        ctx.drawImage(
+          resourceImage,
+          frameData.x, frameData.y, frameData.width, frameData.height, // Source rectangle (sprite sheet)
+          drawX, drawY, drawWidth, drawHeight // Destination rectangle
+        );
+      } else {
+        // Draw the entire image
+        ctx.drawImage(resourceImage, drawX, drawY, drawWidth, drawHeight);
+      }
+    } catch (error) {
+      console.error('Sprite: Failed to draw image', { src, error, drawWidth, drawHeight });
     }
     
     ctx.restore();

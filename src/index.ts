@@ -9,6 +9,9 @@
 export { SpriteManagerProvider, useSpriteManager, usePreloadSprites } from "./SpriteManager";
 export { Sprite } from "./Sprite";
 export { AnimatedSprite } from "./AnimatedSprite";
+// Image-based components (simpler, more reliable)
+export { ImgSprite } from "./ImgSprite";
+export { ImgAnimatedSprite } from "./ImgAnimatedSprite";
 
 // Core classes
 export { AnimationController } from "./AnimationController";

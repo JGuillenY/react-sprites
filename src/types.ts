@@ -67,6 +67,13 @@ export type SpriteProps = {
     scaleY?: number;
     rotation?: number;
     opacity?: number;
+    /** Optional frame data for sprite sheets */
+    frameData?: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
   };
   /** Callback when sprite loads */
   onLoad?: () => void;

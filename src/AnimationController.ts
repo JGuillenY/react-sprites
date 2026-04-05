@@ -54,6 +54,17 @@ export class AnimationController {
    * Update animation state based on elapsed time
    */
   private update(deltaTime: number): void {
+    // SAFETY: Check for invalid deltaTime
+    if (!Number.isFinite(deltaTime) || deltaTime <= 0) {
+      // Use a small default deltaTime
+      deltaTime = 16; // ~60fps
+    }
+    
+    // SAFETY: Cap deltaTime to prevent huge jumps
+    if (deltaTime > 1000) {
+      deltaTime = 1000; // Max 1 second
+    }
+
     if (!this.state.isPlaying || this.state.isPaused) {
       return;
     }
@@ -66,6 +77,11 @@ export class AnimationController {
     const currentFrame = this.getCurrentFrame();
     if (!currentFrame) {
       return;
+    }
+
+    // SAFETY: Check for invalid frame duration
+    if (!currentFrame.duration || currentFrame.duration <= 0) {
+      currentFrame.duration = 100; // Default 100ms
     }
 
     // Apply speed multiplier
@@ -219,7 +235,8 @@ export class AnimationController {
    * Set animation playback speed
    */
   setSpeed(speed: number): void {
-    this.state.speed = Math.max(0.1, speed); // Minimum speed 0.1x
+    // SAFETY: Clamp speed to reasonable range
+    this.state.speed = Math.max(0.1, Math.min(10, speed));
   }
 
   /**

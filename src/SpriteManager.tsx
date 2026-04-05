@@ -21,9 +21,16 @@ export function SpriteManagerProvider({ children }: { children: ReactNode }) {
   // Ref to track loaded resources (for loadSprite to avoid dependency on state)
   const loadedResourcesRef = useRef(loadedResources);
   
-  // Update the ref when state changes
+  // Update the ref when state changes and clean up loading resources
   useEffect(() => {
     loadedResourcesRef.current = loadedResources;
+    
+    // Clean up loadingResourcesRef - remove any that are now in loadedResources
+    for (const [src] of loadingResourcesRef.current) {
+      if (loadedResources[src]?.loaded) {
+        loadingResourcesRef.current.delete(src);
+      }
+    }
   }, [loadedResources]);
 
   /**
@@ -90,10 +97,10 @@ export function SpriteManagerProvider({ children }: { children: ReactNode }) {
           },
         }));
         
-        // Clean up refs
+        // Clean up refs (but keep in loadingResourcesRef as fallback until state updates)
         loadingPromisesRef.current.delete(src);
-        loadingResourcesRef.current.delete(src);
         errorResourcesRef.current.delete(src);
+        // DON'T delete from loadingResourcesRef yet - keep as fallback
         
         resolve(image);
       };
