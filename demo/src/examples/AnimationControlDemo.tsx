@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { AnimatedSprite, useAnimations, useAnimationControl, AnimatedSpriteRef } from '../../../src/index';
 
 export default function AnimationControlDemo() {
@@ -7,8 +7,8 @@ export default function AnimationControlDemo() {
   const [frameHistory, setFrameHistory] = useState<number[]>([]);
   const [eventLog, setEventLog] = useState<string[]>([]);
 
-  // Create animations
-  const animations = useAnimations({
+  // Create animations (memoize config)
+  const animationsConfig = useMemo(() => ({
     idle: {
       frames: [
         { sprite: '/hero_walk1.png', duration: 200 },
@@ -28,7 +28,9 @@ export default function AnimationControlDemo() {
       ],
       loop: false,
     },
-  });
+  }), []);
+  
+  const animations = useAnimations(animationsConfig);
 
   // Set up animation control hook
   const animationControl = useAnimationControl();

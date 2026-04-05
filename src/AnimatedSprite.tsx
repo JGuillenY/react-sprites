@@ -37,6 +37,24 @@ export const AnimatedSprite = forwardRef<AnimatedSpriteRef, AnimatedSpriteProps>
     const [error, setError] = useState<Error | null>(null);
     const animationControllerRef = useRef<AnimationController | null>(null);
     const { preloadResource } = useSpriteManager();
+    
+    // Use refs to track props that shouldn't trigger re-renders
+    const animationsRef = useRef(animations);
+    const idleRef = useRef(idle);
+    const onAnimationCompleteRef = useRef(onAnimationComplete);
+    
+    // Update refs when props change
+    useEffect(() => {
+      animationsRef.current = animations;
+    }, [animations]);
+    
+    useEffect(() => {
+      idleRef.current = idle;
+    }, [idle]);
+    
+    useEffect(() => {
+      onAnimationCompleteRef.current = onAnimationComplete;
+    }, [onAnimationComplete]);
 
     // Collect all unique sprite sources from all animations (memoized)
     const allSpriteSources = useMemo(() => 
@@ -69,34 +87,37 @@ export const AnimatedSprite = forwardRef<AnimatedSpriteRef, AnimatedSpriteProps>
 
     // Initialize animation controller
     useEffect(() => {
-      if (!isLoaded || !animations[idle]) {
+      if (!isLoaded || !animationsRef.current[idleRef.current]) {
         return;
       }
 
       const initialState = {
-        currentAnimation: idle,
+        currentAnimation: idleRef.current,
         currentFrame: 0,
         frameTime: 0,
         isPlaying: false,
         isPaused: false,
-        speed: animations[idle].speed || 1.0,
+        speed: animationsRef.current[idleRef.current].speed || 1.0,
       };
 
       const controller = new AnimationController(
         initialState,
-        animations,
+        animationsRef.current,
         {
           onFrameChange: (frame) => {
             setCurrentFrame(frame);
           },
           onAnimationComplete: (animationId) => {
-            onAnimationComplete?.(animationId);
+            onAnimationCompleteRef.current?.(animationId);
             
             // If it's not a looping animation and it completes,
             // automatically switch back to idle
-            if (animationId !== idle && animations[animationId]?.loop === false) {
+            if (animationId !== idleRef.current && animationsRef.current[animationId]?.loop === false) {
               setTimeout(() => {
-                playAnimation(idle);
+                // Use the current playAnimation function
+                if (animationControllerRef.current) {
+                  animationControllerRef.current.playAnimation(idleRef.current);
+                }
               }, 100); // Small delay before switching back to idle
             }
           },
@@ -106,18 +127,18 @@ export const AnimatedSprite = forwardRef<AnimatedSpriteRef, AnimatedSpriteProps>
       animationControllerRef.current = controller;
 
       if (autoPlay) {
-        controller.playAnimation(idle);
+        controller.playAnimation(idleRef.current);
       }
 
       // Set initial frame
-      const initialFrame = animations[idle].frames[0];
+      const initialFrame = animationsRef.current[idleRef.current].frames[0];
       setCurrentFrame(initialFrame);
 
       return () => {
         controller.destroy();
         animationControllerRef.current = null;
       };
-    }, [isLoaded, idle, animations, autoPlay, onAnimationComplete]);
+    }, [isLoaded, autoPlay]); // Only depend on isLoaded and autoPlay
 
     // Play an animation
     const playAnimation = useCallback((animationId: string, forceRestart: boolean = false) => {
@@ -126,13 +147,13 @@ export const AnimatedSprite = forwardRef<AnimatedSpriteRef, AnimatedSpriteProps>
         return false;
       }
 
-      if (!animations[animationId]) {
+      if (!animationsRef.current[animationId]) {
         console.warn(`Animation "${animationId}" not found`);
         return false;
       }
 
       return animationControllerRef.current.playAnimation(animationId, forceRestart);
-    }, [animations]);
+    }, []); // No dependencies - uses ref
 
     // Control functions
     const pauseAnimation = useCallback(() => {

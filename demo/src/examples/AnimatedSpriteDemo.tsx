@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import { AnimatedSprite, useAnimations, AnimatedSpriteRef } from '../../../src/index';
 
 export default function AnimatedSpriteDemo() {
@@ -7,8 +7,8 @@ export default function AnimatedSpriteDemo() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [speed, setSpeed] = useState(1.0);
 
-  // Create animations using the useAnimations hook
-  const animations = useAnimations({
+  // Create animations using the useAnimations hook (memoize input)
+  const animationsConfig = useMemo(() => ({
     idle: {
       frames: [
         { sprite: '/hero_walk1.png', duration: 300 },
@@ -39,7 +39,9 @@ export default function AnimatedSpriteDemo() {
       loop: false,
       speed: 1.5,
     },
-  });
+  }), []); // Empty dependencies - config never changes
+  
+  const animations = useAnimations(animationsConfig);
 
   const handlePlayAnimation = (animationId: string) => {
     if (spriteRef.current) {
@@ -213,7 +215,8 @@ export default function AnimatedSpriteDemo() {
         <div className="code-block">
           <pre>
             <code>{`// Creating animations with useAnimations hook
-const animations = useAnimations({
+// Memoize the config to prevent recreating animations on every render
+const animationsConfig = useMemo(() => ({
   idle: {
     frames: [
       { sprite: '/hero_walk1.png', duration: 300 },
@@ -225,7 +228,9 @@ const animations = useAnimations({
     speed: 1.0,
   },
   // ... more animations
-});
+}), []); // Empty dependencies - config never changes
+
+const animations = useAnimations(animationsConfig);
 
 // Using the AnimatedSprite component
 <AnimatedSprite

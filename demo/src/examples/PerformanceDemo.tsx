@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Sprite, AnimatedSprite, useAnimations, useSpriteManager } from '../../../src/index';
 
 export default function PerformanceDemo() {
@@ -11,7 +11,8 @@ export default function PerformanceDemo() {
   const { getStats } = useSpriteManager();
 
   // Create a simple animation for multiple sprites
-  const animations = useAnimations({
+  // Memoize animations config
+  const animationsConfig = useMemo(() => ({
     idle: {
       frames: [
         { sprite: '/hero_walk1.png', duration: 200 },
@@ -19,7 +20,9 @@ export default function PerformanceDemo() {
       ],
       loop: true,
     },
-  });
+  }), []);
+  
+  const animations = useAnimations(animationsConfig);
 
   // Calculate FPS
   useEffect(() => {
