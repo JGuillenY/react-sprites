@@ -1,9 +1,11 @@
 import { useCallback, useRef, useMemo, useEffect } from "react";
-import type { Animation } from "./types";
+import type { Animation, Frame } from "./types";
+
+type FrameInput = Pick<Frame, "sprite" | "duration" | "frameData">;
 
 export function useAnimation(
   id: string,
-  frames: Array<{ sprite: string; duration: number }>,
+  frames: Array<FrameInput>,
   options?: {
     name?: string;
     loop?: boolean;
@@ -30,6 +32,7 @@ export function useAnimation(
       id: index,
       duration: frame.duration,
       sprite: frame.sprite,
+      ...(frame.frameData ? { frameData: frame.frameData } : {}),
     })),
     loop,
     speed,
@@ -41,7 +44,7 @@ export function useAnimations(
   animations: Record<
     string,
     {
-      frames: Array<{ sprite: string; duration: number }>;
+      frames: Array<FrameInput>;
       loop?: boolean;
       speed?: number;
       onComplete?: () => void;
@@ -58,6 +61,7 @@ export function useAnimations(
           id: index,
           duration: frame.duration,
           sprite: frame.sprite,
+          ...(frame.frameData ? { frameData: frame.frameData } : {}),
         })),
         loop: config.loop,
         speed: config.speed,
