@@ -1,220 +1,392 @@
-# SpriteManager
+# @infinite-dungeon/sprite-manager
 
-A React-based sprite and animation management library for games. Built with TypeScript, optimized for performance, and designed to replace heavyweight libraries like Pixi.js for 2D game development.
+A React sprite and animation management library for games. Built with TypeScript, designed for React-based 2D games.
 
 ## Features
 
-- 🎨 **Canvas-based rendering** - High-performance sprite rendering
-- 🎬 **Animation system** - Frame-based animations with timing control
-- 📦 **Resource management** - Automatic preloading and caching
-- 🧩 **Sprite sheet support** - Extract frames from grid-based sprite sheets
-- 🔄 **Animation control** - Play, pause, resume, stop, speed control
-- 🎯 **TypeScript support** - Full type safety
-- ⚡ **Performance optimized** - Minimal re-renders, efficient updates
-- 🎮 **Game-ready** - Designed for React-based games
+- 🎬 **Frame-based animation** — play, pause, resume, stop, and speed control
+- 📦 **Resource caching** — images and SVGs loaded once, duplicate requests deduplicated
+- 🧩 **Sprite sheet support** — grid-based frame extraction with CSS `object-position` rendering
+- 🖼️ **Three rendering modes** — `<canvas>`, `<img>`, or inline SVG
+- 🔗 **Imperative ref API** — control animations from parent components
+- 🎯 **TypeScript** — full types for all components, hooks, and utilities
 
 ## Installation
 
 ```bash
 npm install @infinite-dungeon/sprite-manager
-# or
-yarn add @infinite-dungeon/sprite-manager
 ```
 
-## Quick Start
+Requires React 18 or later as a peer dependency.
+
+## Quick start
 
 ```tsx
-import React from 'react';
-import { 
-  SpriteManagerProvider, 
-  AnimatedSprite, 
-  useAnimations 
+import {
+  SpriteManagerProvider,
+  ImgAnimatedSprite,
+  useAnimations,
 } from '@infinite-dungeon/sprite-manager';
+import { useMemo } from 'react';
 
-function Game() {
-  const animations = useAnimations({
+function Character() {
+  const config = useMemo(() => ({
     idle: {
       frames: [
-        { sprite: '/sprites/character-idle-1.png', duration: 200 },
-        { sprite: '/sprites/character-idle-2.png', duration: 200 },
+        { sprite: '/sprites/idle-1.png', duration: 200 },
+        { sprite: '/sprites/idle-2.png', duration: 200 },
       ],
       loop: true,
     },
     walk: {
       frames: [
-        { sprite: '/sprites/character-walk-1.png', duration: 100 },
-        { sprite: '/sprites/character-walk-2.png', duration: 100 },
+        { sprite: '/sprites/walk-1.png', duration: 100 },
+        { sprite: '/sprites/walk-2.png', duration: 100 },
+        { sprite: '/sprites/walk-3.png', duration: 100 },
+        { sprite: '/sprites/walk-4.png', duration: 100 },
       ],
       loop: true,
     },
-  });
+  }), []);
+
+  const animations = useAnimations(config);
 
   return (
-    <AnimatedSprite
+    <ImgAnimatedSprite
       id="player"
       idle="idle"
       animations={animations}
       width={64}
       height={64}
-      transform={{ x: 100, y: 100 }}
-      autoPlay={true}
+      autoPlay
     />
   );
 }
 
-function App() {
+export default function App() {
   return (
     <SpriteManagerProvider>
-      <Game />
+      <Character />
     </SpriteManagerProvider>
   );
 }
 ```
 
-## Core Components
+## Components
 
 ### SpriteManagerProvider
-The context provider that manages sprite resources and caching. Wrap your app with this.
 
-### Sprite
-Static sprite component for rendering non-animated images.
+Wrap your app (or the subtree that uses sprites) with this provider. It deduplicates loads and caches all image and SVG resources.
 
 ```tsx
-import { Sprite } from '@infinite-dungeon/sprite-manager';
-
-<Sprite
-  id="background"
-  src="/sprites/background.png"
-  width={800}
-  height={600}
-  transform={{ opacity: 0.8 }}
-/>
+<SpriteManagerProvider>
+  <Game />
+</SpriteManagerProvider>
 ```
 
-### AnimatedSprite
-Animated sprite component with multiple animations.
+---
+
+### Static sprites
+
+Three rendering modes are available:
+
+| Component | Renders as | Best for |
+|---|---|---|
+| `Sprite` | `<canvas>` | Sprite-sheet frame extraction, pixel transforms |
+| `ImgSprite` | `<img>` | Simple images, native browser caching |
+| `SvgSprite` | Inline `<svg>` | Vector assets, CSS-styleable, no `<img>` wrapper |
 
 ```tsx
-import { AnimatedSprite, useAnimations } from '@infinite-dungeon/sprite-manager';
+import { Sprite, ImgSprite, SvgSprite } from '@infinite-dungeon/sprite-manager';
 
-const animations = useAnimations({
-  idle: { /* ... */ },
-  attack: { /* ... */ },
-  death: { /* ... */ },
-});
-
-<AnimatedSprite
-  id="enemy"
-  idle="idle"
-  animations={animations}
-  width={48}
-  height={48}
-/>
+<Sprite   id="bg"   src="/sprites/background.png" width={800} height={600} />
+<ImgSprite id="coin" src="/sprites/coin.png"       width={32}  height={32}  />
+<SvgSprite id="icon" src="/sprites/sword.svg"      width={48}  height={48}  />
 ```
 
-## Animation Control
+**Props (all static components):**
 
-Control animations via ref:
+| Prop | Type | Description |
+|---|---|---|
+| `id` | `string` | Element identifier |
+| `src` | `string` | URL of the image or SVG |
+| `width` | `number?` | Display width in px |
+| `height` | `number?` | Display height in px |
+| `transform` | `object?` | `x`, `y`, `rotation`, `scaleX`, `scaleY`, `opacity` |
+| `onLoad` | `() => void` | Called when the asset is ready |
+| `onError` | `(err: Error) => void` | Called on load failure |
+
+---
+
+### Animated sprites
+
+| Component | Renders as | Best for |
+|---|---|---|
+| `AnimatedSprite` | `<canvas>` | Sprite-sheet frame clipping via `drawImage` |
+| `ImgAnimatedSprite` | `<img>` | Individual frame files or sprite sheets |
+| `SvgAnimatedSprite` | Inline `<svg>` | SVG frame sequences |
+
+```tsx
+import { ImgAnimatedSprite, useAnimations } from '@infinite-dungeon/sprite-manager';
+import { useMemo } from 'react';
+
+function Hero() {
+  const config = useMemo(() => ({
+    idle:   { frames: [{ sprite: '/idle.png',   duration: 300 }], loop: true },
+    walk:   { frames: [{ sprite: '/walk-1.png', duration: 100 },
+                       { sprite: '/walk-2.png', duration: 100 }], loop: true },
+    attack: { frames: [{ sprite: '/atk-1.png',  duration: 80  },
+                       { sprite: '/atk-2.png',  duration: 80  }], loop: false, speed: 1.5 },
+  }), []);
+
+  const animations = useAnimations(config);
+
+  return (
+    <ImgAnimatedSprite
+      id="hero"
+      idle="idle"
+      animations={animations}
+      width={64}
+      height={64}
+      autoPlay
+      onAnimationComplete={(id) => console.log(`${id} done`)}
+    />
+  );
+}
+```
+
+**Props (all animated components):**
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `id` | `string` | — | Element identifier |
+| `idle` | `string` | — | Animation key to fall back to |
+| `animations` | `Record<string, Animation>` | — | Map produced by `useAnimations` |
+| `width` | `number?` | — | Display width in px |
+| `height` | `number?` | — | Display height in px |
+| `autoPlay` | `boolean?` | `true` | Start the idle animation on mount |
+| `paused` | `boolean?` | `false` | Pause or resume via prop |
+| `transform` | `object?` | — | `x`, `y`, `rotation`, `scaleX`, `scaleY`, `opacity` |
+| `onAnimationComplete` | `(id: string) => void` | — | Fires when a non-looping animation finishes |
+| `onLoad` | `() => void` | — | Fires when all frame assets are loaded |
+
+---
+
+## Animation control
+
+Animated sprite components expose an imperative API via `ref`:
 
 ```tsx
 import { useRef } from 'react';
-import { AnimatedSprite, AnimatedSpriteRef } from '@infinite-dungeon/sprite-manager';
+import { ImgAnimatedSprite, type AnimatedSpriteRef } from '@infinite-dungeon/sprite-manager';
 
 function Character() {
-  const spriteRef = useRef<AnimatedSpriteRef>(null);
-
-  const handleAttack = () => {
-    spriteRef.current?.playAnimation('attack');
-  };
+  const ref = useRef<AnimatedSpriteRef>(null);
 
   return (
     <>
-      <AnimatedSprite ref={spriteRef} /* ... */ />
-      <button onClick={handleAttack}>Attack!</button>
+      <ImgAnimatedSprite ref={ref} id="hero" idle="idle" animations={animations} width={64} height={64} />
+      <button onClick={() => ref.current?.playAnimation('attack')}>Attack</button>
+      <button onClick={() => ref.current?.pauseAnimation()}>Pause</button>
+      <button onClick={() => ref.current?.resumeAnimation()}>Resume</button>
+      <button onClick={() => ref.current?.setAnimationSpeed(2)}>2× speed</button>
     </>
   );
 }
 ```
 
-## Sprite Sheets
+**`AnimatedSpriteRef` methods:**
 
-Extract frames from sprite sheets:
+| Method | Description |
+|---|---|
+| `playAnimation(id, forceRestart?)` | Switch to an animation; returns `false` if the id is unknown |
+| `pauseAnimation()` | Pause at the current frame |
+| `resumeAnimation()` | Resume from the current frame |
+| `stopAnimation()` | Stop and reset to frame 0 |
+| `setAnimationSpeed(n)` | Speed multiplier, clamped to [0.1, 10] |
+| `getAnimationState()` | Returns the current `AnimationState` snapshot |
+
+---
+
+## Sprite sheets
+
+Use `calculateSpriteSheetFrames` to compute per-frame pixel coordinates from a grid sheet, then pass them as `frameData` to `useAnimations`:
 
 ```tsx
-import { calculateSpriteSheetFrames } from '@infinite-dungeon/sprite-manager';
+import {
+  calculateSpriteSheetFrames,
+  useAnimations,
+  ImgAnimatedSprite,
+} from '@infinite-dungeon/sprite-manager';
+import { useMemo } from 'react';
 
-const frames = calculateSpriteSheetFrames({
-  src: '/sprites/character-sheet.png',
-  frameWidth: 32,
-  frameHeight: 32,
-  cols: 4,
-  rows: 3,
-  totalFrames: 10,
-});
+const SHEET = '/sprites/character-sheet.png';
 
-// Use frames with animations
-const animations = useAnimations({
-  walk: {
-    frames: frames.map((frame, index) => ({
-      sprite: '/sprites/character-sheet.png',
-      duration: 100,
-      frameData: frame, // Pass frame coordinates
-    })),
-    loop: true,
-  },
-});
+function Character() {
+  const frames = useMemo(() =>
+    calculateSpriteSheetFrames({ src: SHEET, frameWidth: 64, frameHeight: 64, cols: 4, rows: 4 }),
+  []);
+
+  const config = useMemo(() => ({
+    idle: {
+      frames: frames.slice(0, 4).map((f) => ({ sprite: SHEET, duration: 200, frameData: f })),
+      loop: true,
+    },
+    walk: {
+      frames: frames.slice(4, 8).map((f) => ({ sprite: SHEET, duration: 150, frameData: f })),
+      loop: true,
+    },
+    attack: {
+      frames: frames.slice(8, 12).map((f) => ({ sprite: SHEET, duration: 80, frameData: f })),
+      loop: false,
+    },
+  }), [frames]);
+
+  const animations = useAnimations(config);
+
+  return <ImgAnimatedSprite id="hero" idle="idle" animations={animations} width={64} height={64} />;
+}
 ```
+
+For a single animation, `useSpriteSheetAnimation` combines both steps:
+
+```tsx
+import { useSpriteSheetAnimation } from '@infinite-dungeon/sprite-manager';
+
+const sheet = useSpriteSheetAnimation(
+  '/sprites/run.png',
+  { frameWidth: 64, frameHeight: 64, cols: 8, rows: 1 },
+  100 // duration per frame in ms
+);
+// sheet.frames — ready to pass into useAnimations
+```
+
+---
+
+## SVG sprites
+
+Sources ending in `.svg` are fetched as text and rendered as **inline SVG** — no `<img>` wrapper, full CSS access:
+
+```tsx
+import { SvgSprite, SvgAnimatedSprite, useAnimations } from '@infinite-dungeon/sprite-manager';
+import { useMemo } from 'react';
+
+// Static
+<SvgSprite id="sword" src="/icons/sword.svg" width={48} height={48} />
+
+// Animated — each frame sprite must be a .svg path
+function Flame() {
+  const config = useMemo(() => ({
+    burn: {
+      frames: [
+        { sprite: '/fx/flame-1.svg', duration: 80 },
+        { sprite: '/fx/flame-2.svg', duration: 80 },
+        { sprite: '/fx/flame-3.svg', duration: 80 },
+      ],
+      loop: true,
+    },
+  }), []);
+
+  const animations = useAnimations(config);
+
+  return <SvgAnimatedSprite id="flame" idle="burn" animations={animations} width={64} height={64} />;
+}
+```
+
+`SpriteManagerProvider` detects `.svg` extensions automatically and uses `fetch` instead of `HTMLImageElement`. SVG content is injected via `dangerouslySetInnerHTML` — use only with trusted, controlled asset sources.
+
+---
 
 ## Hooks
 
-### useAnimations
-Create animation definitions with memoization.
+### `useAnimations(config)`
 
-### useAnimationControl
-Control animations from parent components.
-
-### usePreloadSprites
-Preload multiple sprite resources with progress tracking.
+Memoizes a map of animation configs into `Record<string, Animation>`. The `config` object must be stable (defined outside the component or wrapped in `useMemo`); if it changes identity on every render the animations will be recreated and the controller re-initialized.
 
 ```tsx
-const { loading, progress } = usePreloadSprites([
-  '/sprites/player.png',
-  '/sprites/enemy.png',
-  '/sprites/background.png',
-]);
+const config = useMemo(() => ({
+  idle:   { frames: [...], loop: true },
+  walk:   { frames: [...], loop: true },
+  attack: { frames: [...], loop: false, speed: 1.5 },
+}), []);
+
+const animations = useAnimations(config);
 ```
 
-## Performance Features
+### `useAnimation(id, frames, options?)`
 
-- **Automatic caching** - Sprites are loaded once and cached
-- **Promise-based loading** - Prevents duplicate loads
-- **Canvas rendering** - More efficient than DOM images for games
-- **Minimal re-renders** - Optimized with React hooks
-- **Memory management** - Clear cache when needed
+Build a single `Animation` object:
 
-## TypeScript Support
+```tsx
+const idle = useAnimation('idle', [
+  { sprite: '/idle-1.png', duration: 200 },
+  { sprite: '/idle-2.png', duration: 200 },
+], { loop: true });
+```
 
-Full TypeScript support with comprehensive type definitions:
+### `useAnimationControl()`
+
+Control an animated sprite without threading a `ref` through props:
+
+```tsx
+const control = useAnimationControl();
+
+// call control.setControlFunctions(ref.current) once the sprite is ready,
+// then use control.playAnimation / pauseAnimation / etc. anywhere in the tree
+```
+
+### `usePreloadSprites(sources)`
+
+Preload a list of assets in parallel with progress tracking:
+
+```tsx
+const { loading, progress, error } = usePreloadSprites([
+  '/sprites/hero.png',
+  '/sprites/tileset.png',
+  '/icons/ui.svg',
+]);
+
+if (loading) return <ProgressBar value={progress} />;
+```
+
+### `useSpriteSheetAnimation(src, config, frameDuration?)`
+
+Compute `ExtractedFrame` descriptors for every cell in a sprite sheet:
+
+```tsx
+const { src, frames, config } = useSpriteSheetAnimation(
+  '/sprites/player.png',
+  { frameWidth: 32, frameHeight: 32, cols: 8, rows: 4 },
+  100
+);
+```
+
+---
+
+## TypeScript
+
+All public types are exported:
 
 ```typescript
-import type { 
-  Animation, 
-  Frame, 
+import type {
+  Animation,
+  Frame,
+  AnimationState,
+  AnimatedSpriteRef,
   SpriteProps,
-  AnimatedSpriteRef 
+  AnimatedSpriteProps,
+  SpriteSheetConfig,
+  ExtractedFrame,
 } from '@infinite-dungeon/sprite-manager';
 ```
 
-## Browser Support
+---
 
-- Modern browsers with Canvas support
-- React 18+
-- TypeScript 5.0+
+## Requirements
+
+- React ≥ 18
+- Modern browser — Canvas API (`Sprite`, `AnimatedSprite`), `fetch` (`SvgSprite`, `SvgAnimatedSprite`)
 
 ## License
 
 MIT
-
-## Contributing
-
-This library was extracted from the Infinite Dungeon game project. Contributions are welcome!
