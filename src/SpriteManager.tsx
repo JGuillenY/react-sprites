@@ -67,13 +67,39 @@ export function SpriteManagerProvider({ children }: { children: ReactNode }) {
       });
     }
 
+    // SVG sources are fetched as text and stored as inline content
+    if (src.toLowerCase().endsWith('.svg')) {
+      const svgPromise = fetch(src)
+        .then(res => {
+          if (!res.ok) throw new Error(`Failed to load SVG: ${src} (${res.status})`);
+          return res.text();
+        })
+        .then(svgContent => {
+          const image = new Image();
+          setLoadedResources(prev => ({ ...prev, [src]: { image, loaded: true, svgContent } }));
+          loadingPromisesRef.current.delete(src);
+          errorResourcesRef.current.delete(src);
+          loadingResourcesRef.current.delete(src);
+          return image;
+        })
+        .catch(err => {
+          const error = err instanceof Error ? err : new Error(`Failed to load SVG: ${src}`);
+          errorResourcesRef.current.set(src, error);
+          loadingPromisesRef.current.delete(src);
+          loadingResourcesRef.current.delete(src);
+          return Promise.reject(error);
+        });
+      loadingPromisesRef.current.set(src, svgPromise);
+      return svgPromise;
+    }
+
     // Create new promise
     const promise = new Promise<HTMLImageElement>((resolve, reject) => {
       const image = new Image();
-      
+
       // Store in loading ref immediately
       loadingResourcesRef.current.set(src, image);
-      
+
       image.onload = () => {
         // Update state with loaded resource (triggers re-render)
         setLoadedResources(prev => ({
@@ -83,25 +109,25 @@ export function SpriteManagerProvider({ children }: { children: ReactNode }) {
             loaded: true,
           },
         }));
-        
+
         // Clean up refs (but keep in loadingResourcesRef as fallback until state updates)
         loadingPromisesRef.current.delete(src);
         errorResourcesRef.current.delete(src);
         // DON'T delete from loadingResourcesRef yet - keep as fallback
-        
+
         resolve(image);
       };
 
       image.onerror = () => {
         const error = new Error(`Failed to load sprite: ${src}`);
-        
+
         // Store error in ref
         errorResourcesRef.current.set(src, error);
-        
+
         // Clean up refs
         loadingPromisesRef.current.delete(src);
         loadingResourcesRef.current.delete(src);
-        
+
         reject(error);
       };
 

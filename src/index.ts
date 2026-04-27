@@ -13,6 +13,10 @@ export { AnimatedSprite } from "./AnimatedSprite";
 export { ImgSprite } from "./ImgSprite";
 export { ImgAnimatedSprite } from "./ImgAnimatedSprite";
 
+// SVG components (inline rendering, no <img> element)
+export { SvgSprite } from "./SvgSprite";
+export { SvgAnimatedSprite } from "./SvgAnimatedSprite";
+
 // Core classes
 export { AnimationController } from "./AnimationController";
 

@@ -129,12 +129,14 @@ export type AnimationState = {
 };
 
 export type SpriteResource = {
-  /** Image element */
+  /** Image element (null for SVG resources) */
   image: HTMLImageElement;
   /** Whether the image is loaded */
   loaded: boolean;
   /** Loading error if any */
   error?: Error;
+  /** Raw SVG text content, present only for .svg sources */
+  svgContent?: string;
 };
 
 export type SpriteManagerState = {
