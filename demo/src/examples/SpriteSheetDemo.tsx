@@ -23,7 +23,7 @@ export default function SpriteSheetDemo() {
   // Create animations using the sprite sheet frames
   const animationsConfig = useMemo(() => ({
     idle: {
-      frames: spriteSheetFrames.slice(0, 4).map((frame, index) => ({
+      frames: spriteSheetFrames.slice(0, 4).map((frame) => ({
         sprite: "/hero_down-Sheet.png", // Use the sprite sheet URL
         duration: 300,
         frameData: frame, // Pass frame data for sprite sheet coordinates
@@ -32,7 +32,7 @@ export default function SpriteSheetDemo() {
       speed: 1.0,
     },
     walk: {
-      frames: spriteSheetFrames.slice(4, 8).map((frame, index) => ({
+      frames: spriteSheetFrames.slice(4, 8).map((frame) => ({
         sprite: "/hero_down-Sheet.png", // Use the sprite sheet URL
         duration: 150,
         frameData: frame, // Pass frame data for sprite sheet coordinates
@@ -41,7 +41,7 @@ export default function SpriteSheetDemo() {
       speed: 1.0,
     },
     attack: {
-      frames: spriteSheetFrames.slice(8, 12).map((frame, index) => ({
+      frames: spriteSheetFrames.slice(8, 12).map((frame) => ({
         sprite: "/hero_down-Sheet.png", // Use the sprite sheet URL
         duration: 100,
         frameData: frame, // Pass frame data for sprite sheet coordinates
@@ -50,7 +50,7 @@ export default function SpriteSheetDemo() {
       speed: 1.5,
     },
     jump: {
-      frames: spriteSheetFrames.slice(12, 16).map((frame, index) => ({
+      frames: spriteSheetFrames.slice(12, 16).map((frame) => ({
         sprite: "/hero_down-Sheet.png", // Use the sprite sheet URL
         duration: 200,
         frameData: frame, // Pass frame data for sprite sheet coordinates
@@ -230,7 +230,7 @@ const frames = calculateSpriteSheetFrames({
 // Use frames in animations
 const animationsConfig = {
   walk: {
-    frames: frames.slice(0, 4).map((frame, index) => ({
+    frames: frames.slice(0, 4).map((frame) => ({
       sprite: frame.sprite,
       duration: 150,
       frameData: frame, // Include sprite sheet coordinates

@@ -55,28 +55,15 @@ export function SpriteManagerProvider({ children }: { children: ReactNode }) {
       return Promise.reject(error);
     }
 
-    // Check if currently loading (in ref but not in state yet)
+    // Check if currently loading (image element exists but promise was already settled)
     const loadingImage = loadingResourcesRef.current.get(src);
     if (loadingImage) {
-      // Create a new promise that waits for the existing load
+      if (loadingImage.complete) {
+        return Promise.resolve(loadingImage);
+      }
       return new Promise<HTMLImageElement>((resolve, reject) => {
-        const checkInterval = setInterval(() => {
-          // Check if loaded
-          const loaded = loadedResources[src];
-          if (loaded?.loaded) {
-            clearInterval(checkInterval);
-            resolve(loaded.image);
-            return;
-          }
-          
-          // Check if errored
-          const error = errorResourcesRef.current.get(src);
-          if (error) {
-            clearInterval(checkInterval);
-            reject(error);
-            return;
-          }
-        }, 50);
+        loadingImage.addEventListener('load', () => resolve(loadingImage), { once: true });
+        loadingImage.addEventListener('error', () => reject(new Error(`Failed to load sprite: ${src}`)), { once: true });
       });
     }
 
@@ -265,20 +252,20 @@ export function usePreloadSprites(sources: string[]): {
         return;
       }
 
-      try {
-        for (let i = 0; i < sources.length; i++) {
-          if (!isMounted) return;
-          
-          await preloadResource(sources[i]);
-          
-          if (isMounted) {
-            setProgress(Math.round(((i + 1) / sources.length) * 100));
-          }
-        }
+      let completed = 0;
 
-        if (isMounted) {
-          setLoading(false);
-        }
+      try {
+        await Promise.all(
+          sources.map(async src => {
+            await preloadResource(src);
+            if (isMounted) {
+              completed++;
+              setProgress(Math.round((completed / sources.length) * 100));
+            }
+          })
+        );
+
+        if (isMounted) setLoading(false);
       } catch (err) {
         if (isMounted) {
           setError(err instanceof Error ? err : new Error("Failed to preload sprites"));

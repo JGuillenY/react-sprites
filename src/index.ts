@@ -1,6 +1,6 @@
 /**
  * SpriteManager - A React-based sprite and animation management library for games
- * 
+ *
  * @package @infinite-dungeon/sprite-manager
  * @version 0.1.0
  */
@@ -17,15 +17,18 @@ export { ImgAnimatedSprite } from "./ImgAnimatedSprite";
 export { AnimationController } from "./AnimationController";
 
 // Hooks
-export { useAnimation, useAnimations, useAnimationControl, useSpriteSheetAnimation } from "./hooks";
+export { useAnimation, useAnimations, useAnimationControl } from "./hooks";
+export { useSpriteSheetAnimation } from "./spriteSheet";
+
+// Lower-level hook for building custom sprite components
+export { useAnimatedSpriteController } from "./useAnimatedSpriteController";
 
 // Utilities
-export { 
-  calculateSpriteSheetFrames, 
-  extractFrameToCanvas, 
+export {
+  calculateSpriteSheetFrames,
+  extractFrameToCanvas,
   extractAllFrames,
   createAnimationFromSpriteSheet,
-  useSpriteSheetAnimation as useSpriteSheetAnimationHook
 } from "./spriteSheet";
 
 // Types
@@ -40,7 +43,7 @@ export type {
   SpriteManagerState,
   SpriteManagerContextType,
   AnimatedSpriteRef,
-  
+
   // Sprite sheet types
   SpriteSheetConfig,
   ExtractedFrame,

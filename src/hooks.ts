@@ -1,9 +1,6 @@
-import { useCallback, useRef, useMemo } from "react";
+import { useCallback, useRef, useMemo, useEffect } from "react";
 import type { Animation } from "./types";
 
-/**
- * Hook for creating animation definitions
- */
 export function useAnimation(
   id: string,
   frames: Array<{ sprite: string; duration: number }>,
@@ -14,24 +11,32 @@ export function useAnimation(
     onComplete?: () => void;
   }
 ): Animation {
-  // Use useMemo to prevent recreating animation on every render
+  // Destructure to primitive/stable deps so a new options object reference
+  // from the caller doesn't invalidate the memo on every render.
+  const name = options?.name;
+  const loop = options?.loop;
+  const speed = options?.speed;
+  const onComplete = options?.onComplete;
+
+  // Stable wrapper so an inline onComplete function doesn't cause recreation.
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
+  const stableOnComplete = useCallback(() => onCompleteRef.current?.(), []);
+
   return useMemo(() => ({
     id,
-    name: options?.name || id,
+    name: name ?? id,
     frames: frames.map((frame, index) => ({
       id: index,
       duration: frame.duration,
       sprite: frame.sprite,
     })),
-    loop: options?.loop,
-    speed: options?.speed,
-    onComplete: options?.onComplete,
-  }), [id, frames, options]); // Recreate only when dependencies change
+    loop,
+    speed,
+    onComplete: onComplete !== undefined ? stableOnComplete : undefined,
+  }), [id, frames, name, loop, speed, stableOnComplete, onComplete]);
 }
 
-/**
- * Hook for creating multiple animations
- */
 export function useAnimations(
   animations: Record<
     string,
@@ -43,14 +48,12 @@ export function useAnimations(
     }
   >
 ): Record<string, Animation> {
-  // Use useMemo to prevent recreating animations on every render
-  const result = useMemo(() => {
-    const memoizedResult: Record<string, Animation> = {};
-
-    for (const [id, config] of Object.entries(animations)) {
-      memoizedResult[id] = {
-        id,
-        name: id,
+  return useMemo(() => {
+    const result: Record<string, Animation> = {};
+    for (const [animId, config] of Object.entries(animations)) {
+      result[animId] = {
+        id: animId,
+        name: animId,
         frames: config.frames.map((frame, index) => ({
           id: index,
           duration: frame.duration,
@@ -61,16 +64,10 @@ export function useAnimations(
         onComplete: config.onComplete,
       };
     }
-
-    return memoizedResult;
-  }, [animations]); // Recreate only when animations input changes
-
-  return result;
+    return result;
+  }, [animations]);
 }
 
-/**
- * Hook for controlling an AnimatedSprite from parent components
- */
 export function useAnimationControl() {
   const playRef = useRef<(animationId: string, forceRestart?: boolean) => boolean>(() => false);
   const pauseRef = useRef<() => void>(() => {});
@@ -92,25 +89,12 @@ export function useAnimationControl() {
     setSpeedRef.current = controls.setAnimationSpeed;
   }, []);
 
-  const playAnimation = useCallback((animationId: string, forceRestart: boolean = false) => {
-    return playRef.current(animationId, forceRestart);
-  }, []);
-
-  const pauseAnimation = useCallback(() => {
-    pauseRef.current();
-  }, []);
-
-  const resumeAnimation = useCallback(() => {
-    resumeRef.current();
-  }, []);
-
-  const stopAnimation = useCallback(() => {
-    stopRef.current();
-  }, []);
-
-  const setAnimationSpeed = useCallback((speed: number) => {
-    setSpeedRef.current(speed);
-  }, []);
+  const playAnimation = useCallback((animationId: string, forceRestart = false) =>
+    playRef.current(animationId, forceRestart), []);
+  const pauseAnimation = useCallback(() => pauseRef.current(), []);
+  const resumeAnimation = useCallback(() => resumeRef.current(), []);
+  const stopAnimation = useCallback(() => stopRef.current(), []);
+  const setAnimationSpeed = useCallback((speed: number) => setSpeedRef.current(speed), []);
 
   return {
     setControlFunctions,
@@ -120,48 +104,4 @@ export function useAnimationControl() {
     stopAnimation,
     setAnimationSpeed,
   };
-}
-
-/**
- * Hook for creating a simple sprite sheet animation
- * Note: This is a basic implementation. For full sprite sheet support,
- * you'll need to implement custom rendering logic.
- */
-export function useSpriteSheetAnimation(
-  spriteSheet: string,
-  _frameWidth: number, // Currently unused, reserved for future implementation
-  _frameHeight: number, // Currently unused, reserved for future implementation
-  frameCount: number,
-  frameDuration: number = 100
-): Animation[] {
-  const animations: Animation[] = [];
-
-  // Create a simple animation that cycles through all frames
-  const frames = Array.from({ length: frameCount }, () => {
-    // TODO: Implement proper sprite sheet coordinate calculation
-    // For now, we just use the full sprite sheet for each frame
-    
-    return {
-      sprite: spriteSheet,
-      duration: frameDuration,
-      transform: {
-        // Sprite sheet coordinates would be implemented here
-        // For example: translate based on frame index
-      },
-    };
-  });
-
-  animations.push({
-    id: "default",
-    name: "Default",
-    frames: frames.map((frame, index) => ({
-      id: index,
-      duration: frame.duration,
-      sprite: frame.sprite,
-      transform: frame.transform,
-    })),
-    loop: true,
-  });
-
-  return animations;
 }

@@ -1,16 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { SpriteProps } from "./types";
 import { useSpriteManager } from "./SpriteManager";
 
-/**
- * Simple Sprite component using <img> tag instead of canvas
- * 
- * Advantages:
- * - Simpler, more reliable
- * - Browser handles loading/error states
- * - CSS transforms work naturally
- * - No canvas rendering bugs
- */
 export function ImgSprite({
   id,
   src,
@@ -24,38 +15,41 @@ export function ImgSprite({
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const { preloadResource } = useSpriteManager();
+  const onLoadRef = useRef(onLoad);
+  const onErrorRef = useRef(onError);
 
-  // Preload the sprite resource
+  useEffect(() => { onLoadRef.current = onLoad; }, [onLoad]);
+  useEffect(() => { onErrorRef.current = onError; }, [onError]);
+
   useEffect(() => {
-    const loadSprite = async () => {
-      try {
-        await preloadResource(src);
-        setIsLoaded(true);
-        onLoad?.();
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error("Failed to load sprite");
-        setError(error);
-        onError?.(error);
-      }
-    };
+    let isMounted = true;
 
-    loadSprite();
-  }, [src, preloadResource, onLoad, onError]);
+    preloadResource(src)
+      .then(() => {
+        if (isMounted) {
+          setIsLoaded(true);
+          onLoadRef.current?.();
+        }
+      })
+      .catch(err => {
+        if (isMounted) {
+          const loadError = err instanceof Error ? err : new Error("Failed to load sprite");
+          setError(loadError);
+          onErrorRef.current?.(loadError);
+        }
+      });
 
-  // Build CSS transform string
+    return () => { isMounted = false; };
+  }, [src, preloadResource]);
+
   const transformStyle = {
-    transform: `
-      translate(${transform.x || 0}px, ${transform.y || 0}px)
-      rotate(${transform.rotation || 0}deg)
-      scale(${transform.scaleX || 1}, ${transform.scaleY || 1})
-    `.trim(),
+    transform: `translate(${transform.x || 0}px, ${transform.y || 0}px) rotate(${transform.rotation || 0}deg) scale(${transform.scaleX || 1}, ${transform.scaleY || 1})`,
     opacity: transform.opacity !== undefined ? transform.opacity : 1,
     width: width ? `${width}px` : undefined,
     height: height ? `${height}px` : undefined,
-    // Handle sprite sheet frames
     ...(transform.frameData ? {
       objectFit: 'none' as const,
-      objectPosition: `-${transform.frameData.x || 0}px -${transform.frameData.y || 0}px`,
+      objectPosition: `-${transform.frameData.x}px -${transform.frameData.y}px`,
     } : {}),
   };
 
@@ -84,18 +78,8 @@ export function ImgSprite({
       alt={`Sprite: ${id}`}
       data-sprite-id={id}
       data-sprite-src={src}
-      onLoad={() => {
-        setIsLoaded(true);
-        onLoad?.();
-      }}
-      onError={() => {
-        const error = new Error(`Failed to load image: ${src}`);
-        setError(error);
-        onError?.(error);
-      }}
     />
   );
 }
 
-// Default export for convenience
 export default ImgSprite;

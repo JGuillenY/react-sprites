@@ -1,6 +1,8 @@
+import { useMemo } from "react";
+
 /**
  * Sprite Sheet Utilities
- * 
+ *
  * Functions for extracting individual frames from sprite sheets
  */
 
@@ -159,18 +161,21 @@ export function useSpriteSheetAnimation(
   config: SpriteSheetConfig,
   frameDuration: number = 100
 ) {
-  const frames = calculateSpriteSheetFrames(config);
-  
-  return {
-    src,
-    frames: frames.map((frame) => ({
-      sprite: src,
-      duration: frameDuration,
-      transform: {
-        // Frame coordinates will be used in custom rendering
-      },
-      frameData: frame,
-    })),
-    config,
-  };
+  // Destructure config to primitives so a new config object reference from the
+  // caller doesn't invalidate the memo on every render.
+  const { frameWidth, frameHeight, cols, rows, totalFrames } = config;
+
+  return useMemo(() => {
+    const sheetConfig: SpriteSheetConfig = { src, frameWidth, frameHeight, cols, rows, totalFrames };
+    const frames = calculateSpriteSheetFrames(sheetConfig);
+    return {
+      src,
+      frames: frames.map(frame => ({
+        sprite: src,
+        duration: frameDuration,
+        frameData: frame,
+      })),
+      config: sheetConfig,
+    };
+  }, [src, frameWidth, frameHeight, cols, rows, totalFrames, frameDuration]);
 }

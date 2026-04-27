@@ -54,42 +54,22 @@ export class AnimationController {
    * Update animation state based on elapsed time
    */
   private update(deltaTime: number): void {
-    // SAFETY: Check for invalid deltaTime
-    if (!Number.isFinite(deltaTime) || deltaTime <= 0) {
-      // Use a small default deltaTime
-      deltaTime = 16; // ~60fps
-    }
-    
-    // SAFETY: Cap deltaTime to prevent huge jumps
-    if (deltaTime > 1000) {
-      deltaTime = 1000; // Max 1 second
-    }
+    if (!this.state.isPlaying || this.state.isPaused) return;
 
-    if (!this.state.isPlaying || this.state.isPaused) {
-      return;
-    }
+    if (!Number.isFinite(deltaTime) || deltaTime <= 0) deltaTime = 16;
+    if (deltaTime > 1000) deltaTime = 1000;
 
-    const animation = this.getCurrentAnimation();
-    if (!animation) {
-      return;
-    }
+    if (!this.getCurrentAnimation()) return;
 
-    const currentFrame = this.getCurrentFrame();
-    if (!currentFrame) {
-      return;
-    }
+    this.state.frameTime += deltaTime * this.state.speed;
 
-    // SAFETY: Check for invalid frame duration
-    if (!currentFrame.duration || currentFrame.duration <= 0) {
-      currentFrame.duration = 100; // Default 100ms
-    }
-
-    // Apply speed multiplier
-    const adjustedDeltaTime = deltaTime * this.state.speed;
-    this.state.frameTime += adjustedDeltaTime;
-
-    // Check if we should advance to next frame
-    if (this.state.frameTime >= currentFrame.duration) {
+    // Consume as many frames as the accumulated time allows, carrying the remainder
+    while (this.state.isPlaying) {
+      const frame = this.getCurrentFrame();
+      if (!frame) break;
+      const frameDuration = frame.duration > 0 ? frame.duration : 100;
+      if (this.state.frameTime < frameDuration) break;
+      this.state.frameTime -= frameDuration;
       this.advanceFrame();
     }
   }
@@ -99,32 +79,22 @@ export class AnimationController {
    */
   private advanceFrame(): void {
     const animation = this.getCurrentAnimation();
-    if (!animation) {
-      return;
-    }
+    if (!animation) return;
 
     const frameCount = animation.frames.length;
-    
-    // Reset frame time for new frame
-    this.state.frameTime = 0;
 
-    // Move to next frame
     this.state.currentFrame++;
 
-    // Handle end of animation
     if (this.state.currentFrame >= frameCount) {
       if (animation.loop !== false) {
-        // Loop back to start
         this.state.currentFrame = 0;
       } else {
-        // Stop at last frame
         this.state.currentFrame = frameCount - 1;
         this.state.isPlaying = false;
         this.onAnimationComplete?.(animation.id);
       }
     }
 
-    // Notify frame change
     const newFrame = this.getCurrentFrame();
     if (newFrame) {
       this.onFrameChange?.(newFrame);
