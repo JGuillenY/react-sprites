@@ -172,9 +172,11 @@ export class AnimationController {
     const isSameAnimation = this.state.currentAnimation === animationId;
     
     if (isSameAnimation && !forceRestart) {
-      // Already playing this animation, just resume if paused
       if (this.state.isPaused) {
         this.resume();
+      } else if (!this.state.isPlaying) {
+        // Not started yet (e.g. freshly constructed controller)
+        this.start();
       }
       return true;
     }
