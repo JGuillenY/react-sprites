@@ -1,6 +1,6 @@
 {
   "name": "@infinite-dungeon/sprite-manager",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A React-based sprite and animation management library for games",
   "main": "dist/index.cjs.js",
   "module": "dist/index.es.js",
